@@ -4,7 +4,7 @@ function [g, H, gSharp] = image_sharpening(img, metode, D0, n, k)
     kelas = class(img);  f = im2double(img);
     [M, N, ~] = size(f);
     
-    [~, ~, D] = freqGrid(2*M, 2*N);
+    [~, ~, D] = freq_grid(2*M, 2*N);
     switch upper(metode)
         case 'IHPF', jenis = 'ideal';
         case 'GHPF', jenis = 'gaussian';

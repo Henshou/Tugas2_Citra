@@ -85,16 +85,13 @@ function app()
     btnClear  = uibutton(nbGrid, 'Text', 'Clear all',   'ButtonPushedFcn', @onClear);
  
     % 5. Motion blur
-    g5 = mkGrid(5, {26, 26, 26, 26, 26, 26, 26});
+    g5 = mkGrid(5, {26, 26, 26, 26, 26, 26});
     eMbL     = addNum(g5, 1, 'Length L (px)', 15, [1 500]);
     eMbTheta = addNum(g5, 2, 'Angle theta (deg)', 0, [-180 180]);
     eMbK     = addNum(g5, 3, 'K (Wiener NSR)', 0.01, [1e-8 Inf]);
     eMbEps   = addNum(g5, 4, 'epsH (inverse threshold)', 0.05, [0 1]);
     eMbDlim  = addNum(g5, 5, 'Dlim (inverse, 0 = none)', 0, [0 Inf]);
     eMbSigma = addNum(g5, 6, 'Noise sigma (degrade)', 0, [0 1]);
-    chkCent  = uicheckbox(g5, 'Text', 'Centered PSF (zero phase)', 'Value', true, ...
-                          'ValueChangedFcn', @onParamChanged);
-    chkCent.Layout.Row = 7;  chkCent.Layout.Column = [1 2];
  
     right = uigridlayout(main, [2 3]);
     axOrig    = mkAxes(1, 1, 'Original');
@@ -180,7 +177,7 @@ function app()
                 case 5
                     dl = eMbDlim.Value;  if dl <= 0, dl = Inf; end
                     o = struct('K', eMbK.Value, 'epsH', eMbEps.Value, 'Dlim', dl, ...
-                               'sigma', eMbSigma.Value, 'centered', chkCent.Value);
+                               'sigma', eMbSigma.Value);
                     [g, Hr, Hp] = motionblur_restoration(f, mm, eMbL.Value, eMbTheta.Value, o);
                     if isempty(Hr), H = Hp; else, H = Hr; end
             end
@@ -191,7 +188,7 @@ function app()
         end
         showImg(axRes, g, sprintf('Result (%s)', mm));
         showImg(axSpecRes, freq_spectrum(g), 'Result spectrum');
-        showImg(axH, mat2gray(abs(H)), 'Filter |H(u,v)| (centered)');
+        showImg(axH, mat2gray(abs(H)), 'Filter |H(u,v)|');
         showImg(axDiff, mat2gray(abs(im2double(f) - im2double(g))), 'Difference |original - result|');
         setStatus(sprintf('%s done in %.2f s', mm, toc(t0)));
     end

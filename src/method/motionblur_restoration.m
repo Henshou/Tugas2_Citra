@@ -5,22 +5,18 @@ function [g, Hrest, Hpsf] = motionblur_restoration(img, metode, L, theta, option
     option = setDefault(option, 'K',     0.01);
     option = setDefault(option, 'epsH',  0.01);
     option = setDefault(option, 'Dlim',  Inf);
-    option = setDefault(option, 'centered', true);
     
-    kelas = class(img);  
+    kelas = class(img);
     f = im2double(img);
     [M, N, ~] = size(f);
     [U, V, D] = freq_grid(M, N);
     
+    % --- model degradasi H(u,v) ---
     a = L * sind(theta);   b = L * cosd(theta);
     x = (U/M) * a + (V/N) * b;
     s = ones(size(x));  nz = (x ~= 0);
-    s(nz) = sin(pi*x(nz)) ./ (pi*x(nz));        
-    if option.centered
-        Hp = s;                                  
-    else
-        Hp = s .* exp(-1j * pi * x);              
-    end
+    s(nz) = sin(pi*x(nz)) ./ (pi*x(nz));
+    Hp = s;
     
     switch lower(metode)
         case 'degrade'
@@ -42,11 +38,11 @@ function [g, Hrest, Hpsf] = motionblur_restoration(img, metode, L, theta, option
     
         otherwise
             error('Metode "%s" tidak dikenal.', metode);
-    end
-    
-    g = freq_convert(g, kelas);
-    Hpsf  = fftshift(Hp);
-    if isempty(Hr), Hrest = []; else, Hrest = fftshift(Hr); end
+end
+
+g = freq_convert(g, kelas);
+Hpsf = fftshift(Hp);
+if isempty(Hr), Hrest = []; else, Hrest = fftshift(Hr); end
 end
 
 function s = setDefault(s, nama, nilai)

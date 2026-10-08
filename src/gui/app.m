@@ -3,7 +3,7 @@ function app()
 %   Detailed explanation goes here
     root = setup_path();
  
-    f = [];  g = [];  Sorig = [];
+    f = [];  g = [];  Sorig = [];  ref = [];
     notches = zeros(0, 2);
     selRow  = [];
  
@@ -29,7 +29,7 @@ function app()
  
     bGrid = uigridlayout(left, [1 2]);  bGrid.Padding = [0 0 0 0];
     uibutton(bGrid, 'Text', 'Load Image',  'ButtonPushedFcn', @onLoad);
-    uibutton(bGrid, 'Text', 'Save Result', 'ButtonPushedFcn', @onSave);
+    uibutton(bGrid, 'Text', 'Add Reference', 'ButtonPushedFcn', @onAddRef);
  
     ddCat    = uidropdown(left, 'Items', cats, 'ValueChangedFcn', @onCategory);
     ddMethod = uidropdown(left, 'Items', {'-'}, 'ValueChangedFcn', @onParamChanged);
@@ -99,7 +99,7 @@ function app()
     axH       = mkAxes(1, 3, 'Filter |H(u,v)|');
     axRes     = mkAxes(2, 1, 'Result');
     axSpecRes = mkAxes(2, 2, 'Result spectrum');
-    axDiff    = mkAxes(2, 3, 'Difference |original - result|');
+    axDiff    = mkAxes(2, 3, 'Difference |reference - result|');
  
     onCategory();     
  
@@ -123,13 +123,19 @@ function app()
         autoRun();
     end
  
-    function onSave(~, ~)
-        if isempty(g), setStatus('Nothing to save yet.'); return; end
-        [fn, fp] = uiputfile({'*.png'; '*.jpg'; '*.tif'}, 'Save result', 'result.png');
+    function onAddRef(~, ~)
+        startDir = fullfile(root, 'dataset');
+        if ~isfolder(startDir), startDir = root; end
+        [fn, fp] = uigetfile({'*.png;*.jpg;*.jpeg;*.tif;*.tiff;*.bmp', 'Images'}, ...
+                             'Select reference image', startDir);
         figure(fig);
         if isequal(fn, 0), return; end
-        imwrite(g, fullfile(fp, fn));
-        setStatus(sprintf('Saved %s', fn));
+        [A, cmap] = imread(fullfile(fp, fn));
+        if ~isempty(cmap), A = ind2rgb(A, cmap); end
+        if size(A, 3) == 4, A = A(:, :, 1:3); end
+        ref = A;
+        setStatus(sprintf('Reference: %s', fn));
+        autoRun();
     end
  
     function onCategory(~, ~)
@@ -189,7 +195,19 @@ function app()
         showImg(axRes, g, sprintf('Result (%s)', mm));
         showImg(axSpecRes, freq_spectrum(g), 'Result spectrum');
         showImg(axH, mat2gray(abs(H)), 'Filter |H(u,v)|');
-        showImg(axDiff, mat2gray(abs(im2double(f) - im2double(g))), 'Difference |original - result|');
+        if isempty(ref)
+            cla(axDiff);
+            title(axDiff, 'Difference |reference - result| (add a reference)');
+        elseif ~isequal(size(ref), size(g))
+            cla(axDiff);
+            title(axDiff, 'Reference size differs from result');
+        else
+            d = mean(abs(im2double(ref) - im2double(g)), 3);
+            imshow(d, [0 0.25], 'Parent', axDiff);
+         
+            title(axDiff, {'|reference - result|', ...
+                  sprintf('PSNR %.2f dB   SSIM %.3f', psnr(im2double(g), im2double(ref)), ssim(im2double(g), im2double(ref)))});
+        end
         setStatus(sprintf('%s done in %.2f s', mm, toc(t0)));
     end
  
